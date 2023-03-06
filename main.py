@@ -2,7 +2,18 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+
+class Item(BaseModel):
+    name: str
+    price: float
+
+
 app = FastAPI()
+
+
+class BadException(Exception):
+    def __init__(self, message: str):
+        self.message = message
 
 
 async def set_body(request: Request, body: bytes):
@@ -17,9 +28,16 @@ async def get_body(request: Request) -> bytes:
     return body
 
 
-class Item(BaseModel):
-    name: str
-    price: float
+@app.exception_handler(BadException)
+async def size_limit_exception_handler(request: Request, exc: BadException):
+    return JSONResponse(status_code=404, content={"message": exc.message})
+
+
+@app.get("/items/{id}")
+async def get_item(id: int):
+    if id == 1:
+        raise BadException(message='Mauvais ID')
+    return {'name': "Brosse à dents", 'price': "1.50€"}
 
 
 @app.post("/items/")
